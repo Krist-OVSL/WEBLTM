@@ -543,8 +543,8 @@
     const myId = 'Client_' + Math.floor(Math.random() * 9000 + 1000);
     document.getElementById('myClientId').textContent = myId;
 
-    const topicName = "netprog/class/whiteboard/room_master";
-    const presenceTopic = "netprog/class/whiteboard/presence";
+    const topicName = "netprog/nhom03_ltm/whiteboard/room_master";
+    const presenceTopic = "netprog/nhom03_ltm/whiteboard/presence";
 
     const activeClients = new Map();
     activeClients.set(myId, { id: myId, status: 'Đang hoạt động', lastSeen: Date.now() });
@@ -607,7 +607,8 @@
             drawLine(data.x1, data.y1, data.x2, data.y2, data.color, data.size);
             logNet(`[${data.sender}] Vẽ nét x(${Math.round(data.x1)}->${Math.round(data.x2)})`);
           } else if (data.type === 'clear') {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // Kích hoạt hiệu ứng quét Laser đồng bộ khi máy khác bấm xóa
+            triggerClearAnimation(data.sender);
             logNet(`[${data.sender}] Xóa sạch bảng`);
           }
         }
@@ -697,12 +698,65 @@
       element.classList.add('active');
     }
 
+ let isClearing = false;
+    function triggerClearAnimation(senderName) {
+      if (isClearing) return;
+      isClearing = true;
+      // 1. Rung khung bảng vẽ
+      const container = canvas.parentElement;
+      container.classList.add('clearing');
+      // 2. Hiển thị thông báo Toast dọn bảng
+      showClearToast(senderName);
+      // 3. Hiệu ứng tia Laser quét sạch trực tiếp trên Canvas
+      let sweepX = 0;
+      const speed = canvas.width / 22; // Quét xong toàn bộ trong ~350ms
+      function sweepStep() {
+        sweepX += speed;
+        // Xóa sạch phần bảng đằng sau tia quét
+        ctx.clearRect(0, 0, sweepX, canvas.height);
+        if (sweepX < canvas.width) {
+          ctx.save();
+          // Đốm sáng & tia Laser đỏ rực
+          ctx.shadowColor = '#ef4444';
+          ctx.shadowBlur = 15;
+          ctx.fillStyle = '#ef4444';
+          ctx.fillRect(sweepX, 0, 6, canvas.height);
+          // Vệt mờ ánh sáng phía sau tia
+          const gradient = ctx.createLinearGradient(Math.max(0, sweepX - 50), 0, sweepX, 0);
+          gradient.addColorStop(0, 'rgba(239, 68, 68, 0)');
+          gradient.addColorStop(1, 'rgba(239, 68, 68, 0.45)');
+          ctx.fillStyle = gradient;
+          ctx.fillRect(Math.max(0, sweepX - 50), 0, 50, canvas.height);
+          ctx.restore();
+          requestAnimationFrame(sweepStep);
+        } else {
+          // Hoàn tất quét sạch
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          container.classList.remove('clearing');
+          isClearing = false;
+        }
+      }
+      requestAnimationFrame(sweepStep);
+    }
+    function showClearToast(sender) {
+      let toast = document.getElementById('clearToast');
+      if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'clearToast';
+        toast.className = 'clear-toast';
+        document.body.appendChild(toast);
+      }
+      const isMe = (sender === myId);
+      toast.innerHTML = `🧹 <b>${isMe ? 'Bạn' : sender}</b> vừa dọn sạch toàn bộ bảng vẽ!`;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2500);
+    }
     function clearBoard() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      triggerClearAnimation(myId);
       if (client.connected) {
         client.publish(topicName, JSON.stringify({ sender: myId, type: 'clear' }));
       }
-      logNet('Bạn đã gửi lệnh xóa toàn bộ bảng vẽ.');
+      logNet('Bạn đã gửi lệnh xóa toàn bộ bảng vẽ (kèm hiệu ứng Laser).');
     }
 
     setInterval(() => {
