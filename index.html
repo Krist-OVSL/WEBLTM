@@ -130,9 +130,26 @@
       align-items: center;
       gap: 0.5rem;
     }
-    .clear-toast.show {
-      opacity: 1;
-      transform: translateY(0);
+    /* Nút tải ảnh & kéo thả */
+    .btn-secondary-action {
+      background-color: #334155;
+      color: #38bdf8;
+      border: 1px solid #38bdf8;
+      margin-top: 0.5rem;
+    }
+    .btn-secondary-action:hover {
+      background-color: rgba(56, 189, 248, 0.15);
+    }
+    .drop-hint {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      text-align: center;
+      margin-top: 0.25rem;
+      margin-bottom: 0.5rem;
+    }
+    .canvas-drag-over {
+      border: 2px dashed var(--accent-blue) !important;
+      background-color: rgba(56, 189, 248, 0.05) !important;
     }
   </style>
 </head>
@@ -289,6 +306,16 @@
             <div style="margin-bottom: 1rem;">
               <label style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">Độ dày: <span id="sizeVal">4</span>px</label>
               <input type="range" id="brushSize" min="1" max="20" value="4" style="width: 100%; accent-color: var(--accent-blue);" oninput="document.getElementById('sizeVal').textContent=this.value">
+            </div>
+            <div style="margin-bottom: 0.5rem;">
+              <input type="file" id="imageInput" accept="image/*" style="display: none;" onchange="handleFileSelect(event)">
+              <button type="button" class="btn btn-secondary-action" onclick="document.getElementById('imageInput').click()">
+                🖼️ Chèn Ảnh Từ Máy Tính
+              </button>
+              <div class="drop-hint">Hỗ trợ: Kéo thả ảnh vào bảng hoặc Ctrl+V</div>
+              <button type="button" class="btn btn-secondary-action" onclick="downloadBoard()">
+                📥 Tải Bảng Vẽ PNG
+              </button>
             </div>
             <button class="btn btn-danger" onclick="clearBoard()">Xóa Sạch Bảng Chung</button>
           </div>
@@ -610,6 +637,10 @@
             // Kích hoạt hiệu ứng quét Laser đồng bộ khi máy khác bấm xóa
             triggerClearAnimation(data.sender);
             logNet(`[${data.sender}] Xóa sạch bảng`);
+          } else if (data.type === 'image') {
+            // Nhận ảnh được broadcast từ client khác
+            renderImageOnCanvas(data.imgData, data.x, data.y);
+            logNet(`[${data.sender}] Đã chèn một hình ảnh từ PC lên bảng.`);
           }
         }
       } catch (e) {
@@ -758,6 +789,146 @@
       }
       logNet('Bạn đã gửi lệnh xóa toàn bộ bảng vẽ (kèm hiệu ứng Laser).');
     }
+
+    // --- TÍNH NĂNG 1: TẢI BẢNG VẼ DẠNG PNG (ĐÓNG GÓP: KHỞI NGUYÊN) ---
+    function downloadBoard() {
+      const exportCanvas = document.createElement('canvas');
+      exportCanvas.width = canvas.width;
+      exportCanvas.height = canvas.height;
+      const exportContext = exportCanvas.getContext('2d');
+
+      if (!exportContext) {
+        logNet('Không thể tạo ảnh xuất từ bảng vẽ.');
+        return;
+      }
+
+      exportContext.fillStyle = '#ffffff';
+      exportContext.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+      exportContext.drawImage(canvas, 0, 0);
+      exportCanvas.toBlob((blob) => {
+        if (!blob) {
+          logNet('Không thể tạo ảnh PNG để tải xuống.');
+          return;
+        }
+
+        const downloadUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = `whiteboard-${new Date().toISOString().replace(/[:.]/g, '-')}.png`;
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+        logNet('Đã tải bảng vẽ xuống dưới dạng ảnh PNG.');
+      }, 'image/png');
+    }
+
+    // --- TÍNH NĂNG 2: CHÈN ẢNH TỪ PC & KÉO THẢ & BROADCAST MQTT ---
+    function renderImageOnCanvas(imgSrc, x, y, maxDim = 400) {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width;
+        let h = img.height;
+        if (w > maxDim || h > maxDim) {
+          if (w > h) {
+            h = (h / w) * maxDim;
+            w = maxDim;
+          } else {
+            w = (w / h) * maxDim;
+            h = maxDim;
+          }
+        }
+        const posX = (x !== undefined) ? x : (canvas.width - w) / 2;
+        const posY = (y !== undefined) ? y : (canvas.height - h) / 2;
+        ctx.drawImage(img, posX, posY, w, h);
+      };
+      img.src = imgSrc;
+    }
+
+    function processAndBroadcastImage(file, posX, posY) {
+      if (!file || !file.type.startsWith('image/')) {
+        alert('Vui lòng chọn file hình ảnh hợp lệ!');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const rawImg = new Image();
+        rawImg.onload = () => {
+          const tempCanvas = document.createElement('canvas');
+          const maxDim = 450;
+          let w = rawImg.width;
+          let h = rawImg.height;
+          if (w > maxDim || h > maxDim) {
+            if (w > h) { h = (h / w) * maxDim; w = maxDim; }
+            else { w = (w / h) * maxDim; h = maxDim; }
+          }
+          tempCanvas.width = w;
+          tempCanvas.height = h;
+          const tempCtx = tempCanvas.getContext('2d');
+          tempCtx.drawImage(rawImg, 0, 0, w, h);
+
+          const compressedDataUrl = tempCanvas.toDataURL('image/jpeg', 0.75);
+          const finalX = (posX !== undefined) ? posX : (canvas.width - w) / 2;
+          const finalY = (posY !== undefined) ? posY : (canvas.height - h) / 2;
+
+          renderImageOnCanvas(compressedDataUrl, finalX, finalY, maxDim);
+
+          if (client.connected) {
+            client.publish(topicName, JSON.stringify({
+              sender: myId,
+              type: 'image',
+              imgData: compressedDataUrl,
+              x: finalX,
+              y: finalY,
+              w: w,
+              h: h
+            }));
+          }
+          logNet(`Bạn đã chèn ảnh (${Math.round(w)}x${Math.round(h)}px) từ máy tính lên bảng.`);
+        };
+        rawImg.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function handleFileSelect(e) {
+      const file = e.target.files[0];
+      if (file) {
+        processAndBroadcastImage(file);
+        e.target.value = '';
+      }
+    }
+
+    canvas.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      canvas.classList.add('canvas-drag-over');
+    });
+
+    canvas.addEventListener('dragleave', () => {
+      canvas.classList.remove('canvas-drag-over');
+    });
+
+    canvas.addEventListener('drop', (e) => {
+      e.preventDefault();
+      canvas.classList.remove('canvas-drag-over');
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        const rect = canvas.getBoundingClientRect();
+        const dropX = e.clientX - rect.left;
+        const dropY = e.clientY - rect.top;
+        processAndBroadcastImage(e.dataTransfer.files[0], dropX, dropY);
+      }
+    });
+
+    window.addEventListener('paste', (e) => {
+      const items = (e.clipboardData || e.originalEvent?.clipboardData)?.items;
+      if (!items) return;
+      for (let item of items) {
+        if (item.kind === 'file' && item.type.startsWith('image/')) {
+          const file = item.getAsFile();
+          processAndBroadcastImage(file);
+          break;
+        }
+      }
+    });
 
     setInterval(() => {
       const now = Date.now();
