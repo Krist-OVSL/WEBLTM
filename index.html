@@ -74,6 +74,66 @@
     
     .step-box { background-color: #0f172a; border: 1px solid var(--border-color); border-radius: 6px; padding: 1rem; margin-bottom: 1rem; }
     .step-box h4 { color: var(--accent-blue); font-size: 0.95rem; margin-bottom: 0.5rem; }
+
+     @keyframes canvasShake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-6px) rotate(-0.5deg); }
+      40% { transform: translateX(6px) rotate(0.5deg); }
+      60% { transform: translateX(-4px); }
+      80% { transform: translateX(4px); }
+    }
+    .canvas-container {
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+    .canvas-container.clearing {
+      animation: canvasShake 0.45s ease-in-out;
+      box-shadow: 0 0 25px rgba(239, 68, 68, 0.6);
+      border-color: var(--accent-red) !important;
+    }
+    /* Lớp phủ hiệu ứng tia quét laser */
+    .clear-sweep-overlay {
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.25), rgba(255, 255, 255, 0.6), transparent);
+      pointer-events: none;
+      z-index: 10;
+    }
+    .clear-sweep-active {
+      animation: sweepAnim 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+    @keyframes sweepAnim {
+      0% { left: -100%; opacity: 1; }
+      100% { left: 100%; opacity: 0; }
+    }
+    /* Thông báo Toast dọn bảng */
+    .clear-toast {
+      position: fixed;
+      top: 80px;
+      right: 25px;
+      background-color: #1e293b;
+      border: 1px solid var(--accent-red);
+      color: #fff;
+      padding: 0.75rem 1.25rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      z-index: 9999;
+      opacity: 0;
+      transform: translateY(-10px);
+      transition: all 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .clear-toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
   </style>
 </head>
 <body>
