@@ -67,6 +67,9 @@
     .color-picker { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
     .color-btn { width: 32px; height: 32px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; }
     .color-btn.active { border-color: #fff; transform: scale(1.1); }
+
+    .tool-btn { background-color: #0f172a; color: var(--text-muted); border: 1px solid var(--border-color); transition: all 0.2s; }
+    .tool-btn.active { background-color: var(--accent-blue); color: #000; font-weight: bold; border-color: var(--accent-blue); }
     
     code.inline-code { background-color: #334155; color: var(--accent-blue); padding: 0.1rem 0.3rem; border-radius: 4px; font-size: 0.8rem; }
     .theory-text { font-size: 0.9rem; color: var(--text-muted); line-height: 1.7; margin-bottom: 0.75rem; }
@@ -75,7 +78,7 @@
     .step-box { background-color: #0f172a; border: 1px solid var(--border-color); border-radius: 6px; padding: 1rem; margin-bottom: 1rem; }
     .step-box h4 { color: var(--accent-blue); font-size: 0.95rem; margin-bottom: 0.5rem; }
 
-     @keyframes canvasShake {
+    @keyframes canvasShake {
       0%, 100% { transform: translateX(0); }
       20% { transform: translateX(-6px) rotate(-0.5deg); }
       40% { transform: translateX(6px) rotate(0.5deg); }
@@ -92,25 +95,6 @@
       box-shadow: 0 0 25px rgba(239, 68, 68, 0.6);
       border-color: var(--accent-red) !important;
     }
-    /* Lớp phủ hiệu ứng tia quét laser */
-    .clear-sweep-overlay {
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.25), rgba(255, 255, 255, 0.6), transparent);
-      pointer-events: none;
-      z-index: 10;
-    }
-    .clear-sweep-active {
-      animation: sweepAnim 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-    }
-    @keyframes sweepAnim {
-      0% { left: -100%; opacity: 1; }
-      100% { left: 100%; opacity: 0; }
-    }
-    /* Thông báo Toast dọn bảng */
     .clear-toast {
       position: fixed;
       top: 80px;
@@ -130,7 +114,6 @@
       align-items: center;
       gap: 0.5rem;
     }
-    /* Nút tải ảnh & kéo thả */
     .btn-secondary-action {
       background-color: #334155;
       color: #38bdf8;
@@ -168,7 +151,7 @@
   </nav>
 
   <main>
-    <!-- TAB 1: 3 MÔ HÌNH TRUYỀN THÔNG -->
+    <!-- TAB 1 -->
     <div id="tab1" class="tab-content active">
       <div class="grid-2">
         <div class="card">
@@ -188,7 +171,7 @@
 
         <div class="card">
           <div class="card-title">
-            <span>2. Broadcast (Phát Quãng Bá)</span>
+            <span>2. Broadcast (Phát Quảng Bá)</span>
             <span class="badge badge-amber">1-to-All</span>
           </div>
           <div class="canvas-container">
@@ -222,7 +205,7 @@
       </div>
     </div>
 
-    <!-- TAB 2: CƠ CHẾ PUBLIC MQTT BROKER -->
+    <!-- TAB 2 -->
     <div id="tab2" class="tab-content">
       <div class="card">
         <div class="card-title">
@@ -265,7 +248,7 @@
       </div>
     </div>
 
-    <!-- TAB 3: PHÒNG LAB WHITEBOARD PHÂN TÁN -->
+    <!-- TAB 3: WHITEBOARD PHÂN TÁN -->
     <div id="tab3" class="tab-content">
       <div class="grid-sidebar">
         <div>
@@ -294,6 +277,16 @@
 
           <div class="card">
             <div class="card-title"><span>Công Cụ Vẽ</span></div>
+            
+            <!-- CHỌN CÔNG CỤ VẼ: CỌ / HÌNH VUÔNG -->
+            <div style="margin-bottom: 0.75rem;">
+              <label style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">Chế độ vẽ:</label>
+              <div style="display: flex; gap: 0.5rem;">
+                <button type="button" id="toolPencil" class="btn tool-btn active" style="margin-top:0; flex:1;" onclick="setTool('pencil', this)">✏️ Cọ vẽ</button>
+                <button type="button" id="toolRect" class="btn tool-btn" style="margin-top:0; flex:1;" onclick="setTool('rect', this)">⬜ Hình vuông</button>
+              </div>
+            </div>
+
             <div style="margin-bottom: 0.75rem;">
               <label style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">Màu sắc nét cọ:</label>
               <div class="color-picker">
@@ -303,6 +296,7 @@
                 <div class="color-btn" style="background-color: #38bdf8;" onclick="setColor('#38bdf8', this)"></div>
               </div>
             </div>
+            
             <div style="margin-bottom: 1rem;">
               <label style="font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 0.25rem;">Độ dày: <span id="sizeVal">4</span>px</label>
               <input type="range" id="brushSize" min="1" max="20" value="4" style="width: 100%; accent-color: var(--accent-blue);" oninput="document.getElementById('sizeVal').textContent=this.value">
@@ -338,7 +332,7 @@
       </div>
     </div>
 
-    <!-- TAB 4: PHÂN TÍCH GÓI TIN BẰNG WIRESHARK (MỚI BỔ SUNG) -->
+    <!-- TAB 4 -->
     <div id="tab4" class="tab-content">
       <div class="card">
         <div class="card-title">
@@ -346,7 +340,7 @@
           <span class="badge badge-green">Network Forensics</span>
         </div>
         <p class="theory-text">
-          Vì ứng dụng chạy trên giao thức <b>MQTT over WebSockets (<code class="inline-code">wss://</code> - cổng 8884)</b>, toàn bộ gói tin MQTT sẽ được đóng gói bên trong lớp bảo mật TLS/SSL mã hóa và lớp giao vận TCP. Dưới đây là quy trình chuẩn xác để sinh viên bắt và đọc gói tin trên Wireshark hoặc công cụ tương đương (như <i>TCP Dumump</i> hoặc <i>Browser Developer Tools</i>):
+          Vì ứng dụng chạy trên giao thức <b>MQTT over WebSockets (<code class="inline-code">wss://</code> - cổng 8884)</b>, toàn bộ gói tin MQTT sẽ được đóng gói bên trong lớp bảo mật TLS/SSL mã hóa và lớp giao vận TCP. Dưới đây là quy trình chuẩn xác để sinh viên bắt và đọc gói tin trên Wireshark hoặc công cụ tương đương:
         </p>
 
         <div class="step-box">
@@ -560,12 +554,15 @@
       draw();
     }
 
-    // --- TAB 3: WHITEBOARD & TOUCH FIX ---
+    // --- TAB 3: WHITEBOARD & CÁC CÔNG CỤ VẼ ---
     const canvas = document.getElementById('whiteboard');
     const ctx = canvas.getContext('2d');
     let painting = false;
     let currentColor = '#0f172a';
+    let currentTool = 'pencil'; // 'pencil' hoặc 'rect'
     let lastX = 0, lastY = 0;
+    let startX = 0, startY = 0;
+    let snapshot = null;
 
     const myId = 'Client_' + Math.floor(Math.random() * 9000 + 1000);
     document.getElementById('myClientId').textContent = myId;
@@ -633,12 +630,14 @@
           if (data.type === 'draw') {
             drawLine(data.x1, data.y1, data.x2, data.y2, data.color, data.size);
             logNet(`[${data.sender}] Vẽ nét x(${Math.round(data.x1)}->${Math.round(data.x2)})`);
+          } else if (data.type === 'rect') {
+            // Nhận hình vuông / chữ nhật từ client khác
+            drawRect(data.x, data.y, data.w, data.h, data.color, data.size);
+            logNet(`[${data.sender}] Vẽ hình vuông tại (${Math.round(data.x)}, ${Math.round(data.y)})`);
           } else if (data.type === 'clear') {
-            // Kích hoạt hiệu ứng quét Laser đồng bộ khi máy khác bấm xóa
             triggerClearAnimation(data.sender);
             logNet(`[${data.sender}] Xóa sạch bảng`);
           } else if (data.type === 'image') {
-            // Nhận ảnh được broadcast từ client khác
             renderImageOnCanvas(data.imgData, data.x, data.y);
             logNet(`[${data.sender}] Đã chèn một hình ảnh từ PC lên bảng.`);
           }
@@ -664,14 +663,22 @@
       };
     }
 
+    // --- HÀM BẮT ĐẦU VẼ ---
     function startPosition(e) {
       e.preventDefault();
       painting = true;
       const pos = getCursorPos(e);
       lastX = pos.x;
       lastY = pos.y;
+      startX = pos.x;
+      startY = pos.y;
+
+      if (currentTool === 'rect') {
+        snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      }
     }
 
+    // --- HÀM ĐANG KÉO CHUỘT / VẼ ---
     function drawPosition(e) {
       if (!painting) return;
       e.preventDefault();
@@ -680,27 +687,61 @@
       const currentY = pos.y;
       const size = document.getElementById('brushSize').value;
 
-      drawLine(lastX, lastY, currentX, currentY, currentColor, size);
+      if (currentTool === 'pencil') {
+        drawLine(lastX, lastY, currentX, currentY, currentColor, size);
 
-      if (client.connected) {
-        const packet = JSON.stringify({
-          sender: myId,
-          type: 'draw',
-          x1: lastX, y1: lastY,
-          x2: currentX, y2: currentY,
-          color: currentColor,
-          size: size
-        });
-        client.publish(topicName, packet);
+        if (client.connected) {
+          const packet = JSON.stringify({
+            sender: myId,
+            type: 'draw',
+            x1: lastX, y1: lastY,
+            x2: currentX, y2: currentY,
+            color: currentColor,
+            size: size
+          });
+          client.publish(topicName, packet);
+        }
+        lastX = currentX;
+        lastY = currentY;
+
+      } else if (currentTool === 'rect') {
+        // Khôi phục khung ảnh cũ để kéo khung xem trước hình vuông
+        if (snapshot) {
+          ctx.putImageData(snapshot, 0, 0);
+        }
+        drawRect(startX, startY, currentX - startX, currentY - startY, currentColor, size);
       }
-
-      lastX = currentX;
-      lastY = currentY;
     }
 
+    // --- HÀM THẢ CHUỘT / KẾT THÚC VẼ ---
     function endPosition(e) {
       if (!painting) return;
       painting = false;
+
+      if (currentTool === 'rect') {
+        const pos = getCursorPos(e);
+        const width = pos.x - startX;
+        const height = pos.y - startY;
+        const size = document.getElementById('brushSize').value;
+
+        drawRect(startX, startY, width, height, currentColor, size);
+
+        if (client.connected) {
+          const packet = JSON.stringify({
+            sender: myId,
+            type: 'rect',
+            x: startX,
+            y: startY,
+            w: width,
+            h: height,
+            color: currentColor,
+            size: size
+          });
+          client.publish(topicName, packet);
+          logNet(`Bạn đã vẽ hình vuông (${Math.round(width)}x${Math.round(height)}px)`);
+        }
+        snapshot = null;
+      }
     }
 
     canvas.addEventListener('mousedown', startPosition);
@@ -712,6 +753,7 @@
     canvas.addEventListener('touchmove', drawPosition, { passive: false });
     canvas.addEventListener('touchend', endPosition);
 
+    // --- HÀM VẼ NÉT THẲNG / CỌ ---
     function drawLine(x1, y1, x2, y2, color, size) {
       ctx.beginPath();
       ctx.moveTo(x1, y1);
@@ -723,36 +765,51 @@
       ctx.closePath();
     }
 
+    // --- HÀM VẼ HÌNH VUÔNG / CHỮ NHẬT ---
+    function drawRect(x, y, w, h, color, size) {
+      ctx.beginPath();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = size;
+      ctx.strokeRect(x, y, w, h);
+      ctx.closePath();
+    }
+
+    // --- HÀM CHỌN CÔNG CỤ VẼ ---
+    function setTool(tool, element) {
+      currentTool = tool;
+      document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+      element.classList.add('active');
+      logNet(`Đã chuyển sang công cụ: ${tool === 'pencil' ? 'Cọ vẽ tự do' : 'Vẽ hình vuông'}`);
+    }
+
+    // --- HÀM CHỌN MÀU NÉT VẼ ---
     function setColor(color, element) {
       currentColor = color;
       document.querySelectorAll('.color-btn').forEach(btn => btn.classList.remove('active'));
       element.classList.add('active');
     }
 
- let isClearing = false;
+    // --- HIỆU ỨNG VÀ XÓA BẢNG ---
+    let isClearing = false;
     function triggerClearAnimation(senderName) {
       if (isClearing) return;
       isClearing = true;
-      // 1. Rung khung bảng vẽ
       const container = canvas.parentElement;
       container.classList.add('clearing');
-      // 2. Hiển thị thông báo Toast dọn bảng
       showClearToast(senderName);
-      // 3. Hiệu ứng tia Laser quét sạch trực tiếp trên Canvas
+
       let sweepX = 0;
-      const speed = canvas.width / 22; // Quét xong toàn bộ trong ~350ms
+      const speed = canvas.width / 22;
       function sweepStep() {
         sweepX += speed;
-        // Xóa sạch phần bảng đằng sau tia quét
         ctx.clearRect(0, 0, sweepX, canvas.height);
         if (sweepX < canvas.width) {
           ctx.save();
-          // Đốm sáng & tia Laser đỏ rực
           ctx.shadowColor = '#ef4444';
           ctx.shadowBlur = 15;
           ctx.fillStyle = '#ef4444';
           ctx.fillRect(sweepX, 0, 6, canvas.height);
-          // Vệt mờ ánh sáng phía sau tia
+
           const gradient = ctx.createLinearGradient(Math.max(0, sweepX - 50), 0, sweepX, 0);
           gradient.addColorStop(0, 'rgba(239, 68, 68, 0)');
           gradient.addColorStop(1, 'rgba(239, 68, 68, 0.45)');
@@ -761,7 +818,6 @@
           ctx.restore();
           requestAnimationFrame(sweepStep);
         } else {
-          // Hoàn tất quét sạch
           ctx.clearRect(0, 0, canvas.width, canvas.height);
           container.classList.remove('clearing');
           isClearing = false;
@@ -769,6 +825,7 @@
       }
       requestAnimationFrame(sweepStep);
     }
+
     function showClearToast(sender) {
       let toast = document.getElementById('clearToast');
       if (!toast) {
@@ -782,15 +839,16 @@
       toast.classList.add('show');
       setTimeout(() => toast.classList.remove('show'), 2500);
     }
+
     function clearBoard() {
       triggerClearAnimation(myId);
       if (client.connected) {
         client.publish(topicName, JSON.stringify({ sender: myId, type: 'clear' }));
       }
-      logNet('Bạn đã gửi lệnh xóa toàn bộ bảng vẽ (kèm hiệu ứng Laser).');
+      logNet('Bạn đã gửi lệnh xóa toàn bộ bảng vẽ.');
     }
 
-    // --- TÍNH NĂNG 1: TẢI BẢNG VẼ DẠNG PNG (ĐÓNG GÓP: KHỞI NGUYÊN) ---
+    // --- TẢI BẢNG VẼ PNG ---
     function downloadBoard() {
       const exportCanvas = document.createElement('canvas');
       exportCanvas.width = canvas.width;
@@ -821,7 +879,7 @@
       }, 'image/png');
     }
 
-    // --- TÍNH NĂNG 2: CHÈN ẢNH TỪ PC & KÉO THẢ & BROADCAST MQTT ---
+    // --- CHÈN ẢNH TỪ MÁY TÍNH & BROADCAST MQTT ---
     function renderImageOnCanvas(imgSrc, x, y, maxDim = 400) {
       const img = new Image();
       img.onload = () => {
